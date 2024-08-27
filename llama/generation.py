@@ -41,6 +41,7 @@ class Llama:
         max_batch_size: int,
         model_parallel_size: Optional[int] = None,
         seed: int = 1,
+        enable_torch_compile: bool = False,
     ) -> "Llama":
         """
         Build a Llama instance by initializing and loading a model checkpoint.
@@ -109,8 +110,12 @@ class Llama:
         model = Transformer(model_args)
         model.load_state_dict(checkpoint, strict=False)
         print(f"Loaded in {time.time() - start_time:.2f} seconds")
-
-        return Llama(model, tokenizer)
+        if enable_torch_compile:
+            print(f"Torch compiling model ...")
+            compiled_model = torch.compile(model, mode="max-autotune", fullgraph=True)
+            return Llama(compiled_model, tokenizer)
+        else:
+            return Llama(model, tokenizer)
 
     def __init__(self, model: Transformer, tokenizer: Tokenizer):
         self.model = model
